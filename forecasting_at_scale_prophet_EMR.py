@@ -30,7 +30,6 @@ def process_data(pandas_df):
     
     return demand_df, sorted(series_names), total_time_series
   
-
 ## function to split single time series into train and test
 def train_test_split(demand_df, i, train_end_date):
 	final_df = demand_df[demand_df['storeitem']==i][['ds','y']]
@@ -61,7 +60,6 @@ def get_param_grid():
     total_params = len(grid_lst)
 
     return grid, grid_lst, total_params
-
 
 ## Weighted Average Percentage Error 
 def WAPE(y_true, y_pred):
@@ -103,7 +101,7 @@ def train_single_model(series_name, param_dict, train_end_date, demand_df, start
     :returns: series_name, param_dict, test metrics (wape, bias, rmse) and start_time , end_time and time_taken for the mddel execution
     """
     
-    ## capturing the start time of the function
+    ## capturing the start time of the execution
     start_time_local = time.time()
     
     ## generating the train-test split for given time-series: series_name
@@ -137,18 +135,20 @@ def train_single_model(series_name, param_dict, train_end_date, demand_df, start
     y_true = test_final['y']
     y_pred = test_final['yhat']
 
+    ## getting the metric values for the prediction made on test data
     wape, bias, rmse = get_metrics(y_true, y_pred)
-            
+     
+    ## capturing the end time of the execution
     end_time_local = time.time()
     
     task_time = float(end_time_local - start_time_local)/60
 
     return (series_name, str(param_dict), float(wape), float(bias), float(rmse), float(task_time), float(start_time), float(start_time_local), float(end_time_local))
 
-
 ## function to train all models parallely using pyspark functionalities
 def train_all_models_with_pyspark(series_params_lst, train_end_date, demand_df, num_partitions):
 
+    ## capturing the start time of the pyspark job
     start_time_pyspark =  time.time()
 
     ## distributing these combinations across the worker nodes in the cluster
@@ -160,16 +160,17 @@ def train_all_models_with_pyspark(series_params_lst, train_end_date, demand_df, 
     ## calling an action on the above transformation to start the process of training
     output_lst_pyspark = output_rdd.collect()
 
+    ## capturing the end time of the pyspark job
     end_time_pyspark = time.time()
 
     total_time_pyspark = end_time_pyspark - start_time_pyspark
     
     return output_lst_pyspark, total_time_pyspark
 
-
 ## function to train all models sequentially using python functionalities
 def train_all_models_with_python(series_params_lst, train_end_date, demand_df):
 
+    ## capturing the start time of the python job
     start_time_python =  time.time()
 
     output_lst_python = []
@@ -177,6 +178,7 @@ def train_all_models_with_python(series_params_lst, train_end_date, demand_df):
         output = train_single_model(series, param, train_end_date, demand_df, start_time_python)
         output_lst_python.append(output)
 
+    ## capturing the end time of the python job
     end_time_python = time.time()
     total_time_python = end_time_python - start_time_python
 
