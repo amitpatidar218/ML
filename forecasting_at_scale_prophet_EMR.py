@@ -274,6 +274,6 @@ if __name__ == '__main__':
 
 
 # bootstrap_emr_v8.sh
-# spark-submit --packages org.apache.spark:spark-avro_2.11:2.4.0 --master yarn --deploy-mode client pytest.py
+# spark-submit --packages org.apache.spark:spark-avro_2.11:2.4.0 --master yarn --deploy-mode client test.py
 
 
