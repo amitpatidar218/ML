@@ -250,7 +250,6 @@ if __name__ == '__main__':
 
 	print("\n =============================================    S A V I N G    T H E    O U T P U T     =================================================== \n")
 
-    
 	schema = StructType([
 			StructField('series', StringType(), True),
 			StructField('Parameters', StringType(), True),
@@ -268,7 +267,6 @@ if __name__ == '__main__':
 	output_df.repartition(1).write.mode('overwrite').csv(output_df_path, header=True)
 
 	print("\n =====================================    O U T P U T   S A V E D    T O   %s  =================================================== \n" % output_df_path)
-
 
 # bootstrap_emr_v8.sh
 # spark-submit --packages org.apache.spark:spark-avro_2.11:2.4.0 --master yarn --deploy-mode client test.py
