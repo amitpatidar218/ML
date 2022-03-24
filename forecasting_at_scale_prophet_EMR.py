@@ -15,9 +15,10 @@ from fbprophet import Prophet
 
 ## function to process pandas dataframe
 def process_data(pandas_df):
+	
 	demand_df = pandas_df.copy()
 
-	#list of all possible series to train and forecast
+	# list of all possible series to train and forecast
 	series_names = list(pandas_df['storeitem'].unique()) 
 	total_time_series = len(series_names)
 
@@ -32,8 +33,8 @@ def process_data(pandas_df):
   
 ## function to split single time series into train and test
 def train_test_split(demand_df, i, train_end_date):
+	
 	final_df = demand_df[demand_df['storeitem']==i][['ds','y']]
-
 	train = final_df[final_df['ds'].dt.strftime('%Y-%m-%d') <= train_end_date]
 	test = final_df[final_df['ds'].dt.strftime('%Y-%m-%d') > train_end_date]
 
@@ -101,13 +102,13 @@ def train_single_model(series_name, param_dict, train_end_date, demand_df, start
 	:returns: series_name, param_dict, test metrics (wape, bias, rmse) and start_time , end_time and time_taken for the mddel execution
 	"""
 
-	## capturing the start time of the execution
+	# capturing the start time of the execution
 	start_time_local = time.time()
 
-	## generating the train-test split for given time-series: series_name
+	# generating the train-test split for given time-series: series_name
 	final_df, train, test = train_test_split(demand_df, series_name, train_end_date)
     
-	## instantiating the prophet model with the given parameters: p
+	# instantiating the prophet model with the given parameters: p
 	p_model = Prophet(growth = 'linear',
 		      	yearly_seasonality = param_dict['yearly_seasonality'],
 		      	weekly_seasonality = param_dict['weekly_seasonality'],
@@ -118,27 +119,27 @@ def train_single_model(series_name, param_dict, train_end_date, demand_df, start
 		      	changepoint_range=0.8
 		      	)
     
-	## adding monthly seasonality if required
+	# adding monthly seasonality if required
 	if param_dict['monthly_seasonality']:
 		p_model.add_seasonality(name='monthly', period=30.5, fourier_order = 5, 
 					prior_scale = param_dict['seasonality_prior_scale'], mode = param_dict['seasonality_mode'])
 
-	## fitting the model on the train data and predicting on the test data
+	# fitting the model on the train data and predicting on the test data
 	p_model.fit(train)
 	test_pred_df = p_model.predict(test)[['ds', 'yhat']]
 
-	## merging actual test data with predicted test data
+	# merging actual test data with predicted test data
 	test_final = test.merge(test_pred_df, on=['ds'], how='left')
 	test_final = test_final[['ds', 'y', 'yhat']]
 
-	## model evaluation
+	# model evaluation
 	y_true = test_final['y']
 	y_pred = test_final['yhat']
 
-	## getting the metric values for the prediction made on test data
+	# getting the metric values for the prediction made on test data
 	wape, bias, rmse = get_metrics(y_true, y_pred)
 
-	## capturing the end time of the execution
+	# capturing the end time of the execution
 	end_time_local = time.time()
 
 	task_time = float(end_time_local - start_time_local)/60
@@ -148,19 +149,19 @@ def train_single_model(series_name, param_dict, train_end_date, demand_df, start
 ## function to train all models parallely using pyspark functionalities
 def train_all_models_with_pyspark(series_params_lst, train_end_date, demand_df, num_partitions):
 
-	## capturing the start time of the pyspark job
+	# capturing the start time of the pyspark job
 	start_time_pyspark =  time.time()
 
-	## distributing these combinations across the worker nodes in the cluster
+	# distributing these combinations across the worker nodes in the cluster
 	series_param_rdd = sc.parallelize(series_params_lst, num_partitions)
 
-	## transforming above rdd to train the all the models
+	# transforming above rdd to train the all the models
 	output_rdd = series_param_rdd.map(lambda x: train_single_model(x[0], x[1], train_end_date, demand_df, start_time_pyspark))
 
-	## calling an action on the above transformation to start the process of training
+	# calling an action on the above transformation to start the process of training
 	output_lst_pyspark = output_rdd.collect()
 
-	## capturing the end time of the pyspark job
+	# capturing the end time of the pyspark job
 	end_time_pyspark = time.time()
 
 	total_time_pyspark = end_time_pyspark - start_time_pyspark
@@ -170,7 +171,7 @@ def train_all_models_with_pyspark(series_params_lst, train_end_date, demand_df, 
 ## function to train all models sequentially using python functionalities
 def train_all_models_with_python(series_params_lst, train_end_date, demand_df):
 
-	## capturing the start time of the python job
+	# capturing the start time of the python job
 	start_time_python =  time.time()
 
 	output_lst_python = []
@@ -178,7 +179,7 @@ def train_all_models_with_python(series_params_lst, train_end_date, demand_df):
 		output = train_single_model(series, param, train_end_date, demand_df, start_time_python)
 		output_lst_python.append(output)
 
-	## capturing the end time of the python job
+	# capturing the end time of the python job
 	end_time_python = time.time()
 	
 	total_time_python = end_time_python - start_time_python
@@ -195,34 +196,34 @@ if __name__ == '__main__':
 
 	print("\n ======================================  S E T T I N G   T H E   I N P U T   P A R A M E T E R S ======================================= \n")
 
-	## path to the s3 bucket where the training data is located
+	# path to the s3 bucket where the training data is located
 	demand_df_path = "s3://Machine-Learning/forecasting_test/store_item_sales.csv"
 
-	## path to the s3 bucket where the output needs to be saved
+	# path to the s3 bucket where the output needs to be saved
 	output_df_path = "s3://Machine-Learning/forecasting_test/model_all_param_metrics"
 
-	## deciding number of partitions the data is to be divided into
+	# deciding number of partitions the data is to be divided into
 	num_partitions = int(sc.getConf().get('spark.default.parallelism')) # fetching from the cluster configurations
 	# num_partitions = 80 # set it manually
 
-	## deciding the train_end_date
+	# deciding the train_end_date
 	train_end_date = '2017-06-31'
 	
 	print("\n ====================================   R E A D I N G   &   P R O C E S S I N G    T H E   D A T A ======================================= \n")
 
-	## reading the data from s3 in spark dataframe
+	# reading the data from s3 in spark dataframe
 	spark_df = spark.read.csv(demand_df_path, header = 'true')
 
-	## converitng pyspark dataframe to pandas dataframe
+	# converitng pyspark dataframe to pandas dataframe
 	pandas_df = spark_df.toPandas()
 
-	## processing the data to get the desired format and the list of series(storeitem) to train
+	# processing the data to get the desired format and the list of series(storeitem) to train
 	demand_df, series_names, total_time_series = process_data(pandas_df)
 
-	## generating the parameter grid
+	# generating the parameter grid
 	grid, grid_lst, total_params = get_param_grid()  # grid size = 64
 
-	## creating all combination of models (series, parameters)
+	# creating all combination of models (series, parameters)
 	series_to_train = series_names[:100]  # training first 100 time-series
 	series_params_lst = list(itertools.product(series_to_train, grid_lst))  # size = 100*64
 	total_models = len(series_params_lst)
