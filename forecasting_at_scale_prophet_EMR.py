@@ -44,12 +44,12 @@ def get_param_grid():
 
 	# defining parameters grid for hyperparameter
 	params_grid = {'yearly_seasonality': [True, False],
-		   'weekly_seasonality': [True, False],
-		   'monthly_seasonality': [True, False],
-		   'seasonality_mode': ['multiplicative', 'additive'],
-		   'changepoint_prior_scale': [0.05, 0.1],
-		   'seasonality_prior_scale': [0.1, 1.0]
-		  }
+		       'weekly_seasonality': [True, False],
+		       'monthly_seasonality': [True, False],
+		       'seasonality_mode': ['multiplicative', 'additive'],
+		       'changepoint_prior_scale': [0.05, 0.1],
+		       'seasonality_prior_scale': [0.1, 1.0]
+		      }
 
 	grid = ParameterGrid(params_grid)
 
